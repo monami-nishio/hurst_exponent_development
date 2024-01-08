@@ -1,1 +1,3 @@
 # hurst_exponent_development
+
+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
