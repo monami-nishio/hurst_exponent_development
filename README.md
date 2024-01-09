@@ -7,72 +7,43 @@ This is the codes to replicate the analysis in Nishio et al.
 [Link to the paper]
 
 ## Dataset (/dataset)
-Following files include behavioral information during training sessions.
-- wholeses_airpuff.mat
-- wholeses_omission.mat
+- adult
+-   connectivity
+-   correlation
+-   timeseries
+- childhood
 
-The information below is included in each file.
-| Column | Description |
-| ---- | ---- |
-| success | Lever successfully pulled (0/1) |
-| Cue1 | tone A was presented (0/1) |
-| Cue2 | tone B was presented (0/1) |
-| reward | Reward (water) was presented (0/1) |
-| punish | Punishment (airpuff) was presented (0/1) |
-| RT | Response Time |
-| ses_len | Number of trials for each training session |
-| ses_len1 | Number of tone A trials for each training session |
-| ses_len2 | Number of tone B trials for each training session |
-
-Following files include behavioral information for acsf/muscimol sessions.
-- airpuff_acsf_history.mat
-- airpuff_muscimol_history.mat
-- omission_acsf_history.mat
-- omission_muscimol_history.mat
-
-The information below is included in each file.
-| Column | Description |
-| ---- | ---- |
-| trial_idx | ID of each trial |
-| success | Lever successfully pulled (0/1) |
-| Cue1 | tone A was presented (0/1) |
-| Cue2 | tone B was presented (0/1) |
-| reward | Reward (water) was presented (0/1) |
-| punish | Punishment (airpuff) was presented (0/1) |
-| RT | Response Time |
-| consumatoryLick | Number of licks after reward presentation |
-| anticipatoryLick | Number of licks before go cue |
-| earlypull | Number of pulls before go cue |
-| analyzed | Trials prior to obtaining 60% of the total planned reward (0/1)|
-| LeverPullDuration | Duration of lever pulled above the threshold |
-| LickDuration | Duration of licking |
-| PullSpeed | Speed of pulling lever |
+| Column | Column | Description |
+| ---- | ---- | ---- |
+| adult | timeseries | rsfMRI timeseries for adult samples |
+|  | correlation | rsfMRI pearson correlation matrix for adult samples |
+|  | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
+| childhood | timeseries | rsfMRI timeseries for adult samples |
+|  | correlation | rsfMRI pearson correlation matrix for adult samples |
+| | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
+| rna | column_metadata |  |
+|  | rows_metadata |  |
+|  | expression_matrix |  |
 
 ## How to run (/codes)
 
 To reproduce Figure 1,
-* 
+* 'Figure1.ipyng' reproduce RNA-analysis. 
 
 To reproduce Figure 2,   
-* `Fig2_fitting.m` repeats fitting 5000 (50x100) times and plots the fitted parameters. Executing this code takes about 3 days; therefore, we pre-store the parameters in advance in the 'param/' directory.
-* `Fig2_fitting_result_aggregation.m` aggregates 100 fitting results and chooses the parameters of the maximum log likelihood.
+* `Figure2AB.ipynb` reproduce sample timeseries and spectrogram.
+* `Figure2CD.Rmd' reproduce hurst exponent along S-A axis.
+
+To reproduce Figure 3,   
+* `Figure3' reproduce hurst exponent developmental analysis.  
 
 To reproduce Figure 4,   
-* `Fig4_parameter_plotting.m` plots fitted parameters.  
+* `Figure4A.ipynb` reproduce sample correlation matrix.
+* `Figure4CD.Rmd` reproduce participation coefficient along S-A axis.
 
-To reproduce Figure 6,   
-* `Fig6_optimization_plotting_airpuff` plots optimization results for the airpuff task.
-
-To reproduce Supplementary Figure 1,   
-* `SupFig1_prediction.m` plots prediction results.
+To reproduce Figure 5,   
+* `Figure5.Rmd` reproduce participation coefficient developmental analysis.
   
-To reproduce Supplementary Figure 2,  
-* `SupFig2_simulation.m` repeats simulation 1000 times and output plotted figures of simulation results and RMSE averaged across 1000 simulation results.
-
-To reproduce Supplementary Figure 3,  
-* `SupFig3_optimization.m` conducts optimization of each parameter and outputs the optimized parameters.  
-* `SupFig3_trialsimulation.m` plots simulation results using the original parameters.  
-* `SupFig3_trialsimulation_optimized.m` plots simulation results using optimized parameters.  
-
-To reproduce Supplementary Figure 5,   
-* `SupFig5_optimization_plotting_omission` plots optimization results for the omission task.
+To reproduce Figure 6,  
+* `Figure6A-C.Rmd` reproduce correlation mapping between hurst exponent and participation coefficient.
+* `Figure6D-G.Rmd` reproduce income effect on hurst exponent and participation coefficient.
