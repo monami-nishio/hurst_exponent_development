@@ -6,12 +6,14 @@ github_pat_11AKVVO5A0URuwQPWhwjMy_nzSTB3mUnLCJruD1cNNC9VUs395cy2aFsvXi1UjKUu3QSN
 This is the codes to replicate the analysis in Nishio et al.  
 [Link to the paper]
 
-## Dataset (/dataset)
-- adult
--   connectivity
--   correlation
--   timeseries
-- childhood
+## Setup
+Install following MATLAB packages and put under /module folder.
+* 2019_03_03_BCT
+* nonfractal
+* system-segregation-and-graph-tools
+* wmtsa-matlab-0.2.6
+
+## Dataset (/data)
 
 | Column | Column | Description |
 | ---- | ---- | ---- |
@@ -27,15 +29,21 @@ This is the codes to replicate the analysis in Nishio et al.
 
 ## How to run (/codes)
 
+To calculate hurst exponent
+* `hurst_exponent.m`. 
+
+To calculate participation coefficient
+* `participation_coefficient.m`. 
+
 To reproduce Figure 1,
-* 'Figure1.ipyng' reproduce RNA-analysis. 
+* `Figure1.ipynb` reproduce RNA-analysis. 
 
 To reproduce Figure 2,   
 * `Figure2AB.ipynb` reproduce sample timeseries and spectrogram.
-* `Figure2CD.Rmd' reproduce hurst exponent along S-A axis.
+* `Figure2CD.Rmd` reproduce hurst exponent along S-A axis.
 
 To reproduce Figure 3,   
-* `Figure3' reproduce hurst exponent developmental analysis.  
+* `Figure3.Rmd` reproduce hurst exponent developmental analysis.  
 
 To reproduce Figure 4,   
 * `Figure4A.ipynb` reproduce sample correlation matrix.
