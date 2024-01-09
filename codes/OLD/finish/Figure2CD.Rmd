@@ -1,0 +1,63 @@
+
+```{r setup, error=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggseg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+load(file="../modules/schaefer7_400_3d.rda")
+lh_label <- schaefer7_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer7_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label  <-rbind(lh_label, rh_label)
+child <- read.csv('../derivatives/childhood/original.csv')
+child['region'] <- label
+adult <- read.csv('../derivatives/adult/original.csv')
+adult['region'] <- label
+```
+
+```{r setup, error=TRUE, include=FALSE}
+# Figure2C
+ggseg(adult, atlas = schaefer7_400, mapping = aes(fill = H), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.3)) +
+  theme_brain(text.size=16)
+ggsave(filename ='../figures/Figure2Cadult.eps', device = "pdf", dpi = 500)
+
+# Figure2D
+ggseg(child, atlas = schaefer7_400, mapping = aes(fill = H), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.3)) +
+  theme_brain(text.size=16)
+ggsave(filename ='../figures/Figure2Dchild.eps', device = "pdf", dpi = 500)
+```
+
+```{r setup, error=TRUE, include=FALSE}
+k = 3
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+
+# Figure2E
+model <- gam(scale(adult[['H']]) ~ s(SArank, k=k), data = adult)
+postscript('../figures/Figure2Eadult.eps') 
+plot(model, all.terms = TRUE, residuals=TRUE, shade=TRUE, xlab='S-Aaxis', ylab='Hurst Exponent (z-scored)', col=colfunc[adult[['HArank']]]) 
+dev.off()
+
+# Figure2F
+model <- gam(scale(child[['H']]) ~ s(SArank, k=k), data = child)
+postscript('../figures/Figure2Fchild.eps') 
+plot(model, all.terms = TRUE, residuals=TRUE, shade=TRUE, xlab='S-Aaxis', ylab='Hurst Exponent (z-scored)', col=colfunc[child[['HArank']]]) 
+dev.off()
+```

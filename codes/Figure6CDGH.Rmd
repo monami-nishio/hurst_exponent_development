@@ -1,0 +1,144 @@
+---
+title: "Piper Functional Maturity"
+author: "Cassidy McDermott"
+date: "8/19/2023"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+devtools::install_github("WinVector/WVPlots")
+library(WVPlots)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggExtra)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+library(gratia)
+
+source("/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/R/rotate.parcellation.R")
+source("/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/R/perm.sphere.p.R")
+
+load(file="/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/R/schaefer7_400_3d.rda")
+lh_label <- schaefer7_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer7_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+
+lh_label <- schaefer7_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer7_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+rh_part_age <- read.csv("/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400rh_median_income.csv")
+lh_part_age <- read.csv("/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400lh_median_income.csv")
+part <- cbind(lh_part_age[1:128, 1:200], rh_part_age)
+
+schaefer_H <- data.frame(income=1:400)
+pvalue <- data.frame(income=1:400)
+for (n in 1:400){
+  col <- colnames(part)[n]
+  gam.model <- gam(scale(part[[col]]) ~ s(income_median, k=3) + age_scan + male + t1_rating_avg, data = part)
+  gam.nullmodel <- gam(scale(part[[col]]) ~ age_scan + male + t1_rating_avg, data = part)
+  derv <- derivatives(gam.model, interval = "simultaneous", unconditional = F)
+  pvalue$income[n] <- anova.gam(gam.nullmodel, gam.model, test='Chisq')$`Pr(>Chi)`[2]
+  ### effect size
+  sse.model <- sum((gam.model$y - gam.model$fitted.values)^2)
+  sse.nullmodel <- sum((gam.nullmodel$y - gam.nullmodel$fitted.values)^2)
+  partialRsq <- (sse.nullmodel - sse.model)/sse.nullmodel
+  ### effect direction
+  mean.derivative <- mean(derv$derivative)
+  if(mean.derivative < 0){ #if the average derivative is less than 0, make the effect size estimate negative
+    partialRsq <- partialRsq*-1}
+  schaefer_H$income[n] <- partialRsq
+  }
+
+correctedpvalue <- data.frame(income=1:400)
+correctedpvalue$income <- p.adjust(pvalue$income, method=c("fdr")) < 0.05
+pvalue$income <- pvalue$income < 0.05
+
+schaefer_H_extractp <- schaefer_H
+schaefer_H_extractp[pvalue==FALSE] <- NA
+schaefer_H_extractpadj <- schaefer_H
+schaefer_H_extractpadj[correctedpvalue==FALSE] <- NA
+schaefer_H_extractpadj_lh <- cbind(schaefer_H_extractpadj[1:200,1:1], lh_label) 
+schaefer_H_extractpadj_rh <- cbind(schaefer_H_extractpadj[201:400,1:1], rh_label) 
+schaefer_H_extractp_lh <- cbind(schaefer_H_extractp[1:200,1:1], lh_label) 
+schaefer_H_extractp_rh <- cbind(schaefer_H_extractp[201:400,1:1], rh_label) 
+schaefer_H_lh <- cbind(schaefer_H[1:200,1:1], lh_label) 
+schaefer_H_rh <- cbind(schaefer_H[201:400,1:1], rh_label) 
+colnames(schaefer_H_extractpadj_lh) <- c('age','region')
+colnames(schaefer_H_extractpadj_rh) <- c('age','region')
+colnames(schaefer_H_extractp_lh) <- c('age','region')
+colnames(schaefer_H_extractp_rh) <- c('age','region')
+colnames(schaefer_H_lh) <- c('age','region')
+colnames(schaefer_H_rh) <- c('age','region')
+schaefer_H_extractp <- rbind(schaefer_H_extractp_lh, schaefer_H_extractp_rh)
+
+# Figure5C
+ggseg(schaefer_H_extractp, atlas = schaefer7_400, mapping = aes(fill = age), 
+      position = "stacked") +
+  scale_fill_gradient(low = "blue", high = "red", name = bquote(age_effect), limits = c(-0.05, 0.05)) + 
+  theme_brain(text.size=16)
+ggsave(filename ='figures/Figure5C.eps', device = "pdf", dpi = 500) #, width = .5 , height = .5
+```
+
+```{r setup, include=FALSE}
+# Figure5D
+concat <- read.csv('/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/pvalues/concat_original.csv')
+schaefer_H['HArank'] <- concat['HArank']
+k = 5
+model <- gam(schaefer_H[['income']] ~ s(HArank, k=k), data = schaefer_H)
+postscript('figures/Figure5D.eps') 
+plot(model, all.terms = TRUE, residuals=TRUE, shade=TRUE, ylab='Participation Coefficient income effect', xlab='S-Aaxis')
+title(main=paste('R^2:',toString(summary(model)$r.sq[1]),' P-value:', toString(summary(model)$s.table[,4])))
+dev.off()
+write_csv(schaefer_H, '/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/pvalues/Part_gam_incomeeffect.csv')
+
+# Figure5G
+income_low <- read.csv("/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400_income_low.csv") 
+income_high <- read.csv("/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400_income_high.csv") 
+colfunc <- colorRampPalette(c("gold","purple"))(2)
+postscript('figures/Figure5G.eps') 
+model_low <- gam(scale(rowMeans(income_low[2:201])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = income_low)
+model_high <- gam(scale(rowMeans(income_high[2:201])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = income_high)
+plot(model_high, se=TRUE, residuals=FALSE, shade=TRUE, col=colfunc[1], shade.col=colfunc[1], ylim=c(-2,2), xlim=c(4,11), ylab='Participation Coefficient (z-scored)', xlab='Age')
+par(new=T)
+plot(model_low, se=TRUE, residuals=FALSE, shade=TRUE, col=colfunc[1], shade.col=colfunc[1], ylim=c(-2,2), xlim=c(4,11), ylab='', xlab='', lty=2)
+dev.off()
+
+# Figure5H
+postscript('figures/Figure5H.eps') 
+model_low <- gam(scale(rowMeans(income_low[202:401])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = income_low)
+model_high <- gam(scale(rowMeans(income_high[202:401])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = income_high)
+plot(model_high, se=TRUE, residuals=FALSE, shade=TRUE, col=colfunc[2], shade.col=colfunc[2], ylim=c(-2,2),  xlim=c(4,11),ylab='Participation Coefficient (z-scored)', xlab='Age')
+par(new=T)
+plot(model_low, se=TRUE, residuals=FALSE, shade=TRUE, col=colfunc[2], shade.col=colfunc[2], ylim=c(-2,2),  xlim=c(4,11),ylab='', xlab='', lty=2)
+dev.off()
+```
+
+```{r setup, include=FALSE}
+# Figure5G
+income_low <- read.csv("/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400_income_low.csv") 
+income_high <- read.csv("/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400_income_high.csv") 
+colfunc <- colorRampPalette(c("gold","purple"))(3)
+i = 1
+for (n in c(0,133,266)){
+  postscript(paste('figures/Figure5G', n, '.eps'))
+  col <- colnames(income_low)[(2+n):(134+n)]
+  model_low <- gam(scale(rowMeans(income_low[col])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = income_low)
+  model_high <- gam(scale(rowMeans(income_high[col])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = income_high)
+  plot(model_high, se=FALSE, residuals=TRUE, shade=FALSE, col=colfunc[i], shade.col=colfunc[1], ylim=c(-2,2), xlim=c(4,11), ylab='Hurst Exponent (z-scored)', xlab='Age', pch=16)
+  par(new=T)
+  plot(model_low, se=FALSE, residuals=TRUE, shade=FALSE, col=colfunc[i], shade.col=colfunc[1], ylim=c(-2,2), xlim=c(4,11), ylab='', xlab='', lty=2, pch=1)
+  dev.off()
+  i = i+1
+}
+```

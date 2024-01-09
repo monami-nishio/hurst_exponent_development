@@ -1,0 +1,65 @@
+---
+title: "Piper Functional Maturity"
+author: "Cassidy McDermott"
+date: "8/19/2023"
+output: html_document
+---
+
+```{r setup, error=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+load(file="../modules/schaefer7_400_3d.rda")
+lh_label <- schaefer7_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer7_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label  <-rbind(lh_label, rh_label)
+child <- read.csv('../derivatives/childhood/original.csv')
+child['region'] <- label
+adult <- read.csv('../derivatives/adult/original.csv')
+adult['region'] <- label
+```
+
+```{r setup, error=TRUE, include=FALSE}
+# Figure4C
+ggseg(adult, atlas = schaefer7_400, mapping = aes(fill = part), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue" ,limits = c(0.6, 0.85)) +
+  theme_brain(text.size=16)
+ggsave(filename ='../figures/Fig4C.eps', device = "pdf", dpi = 500) #, width = .5 , height = .5
+
+# Figure4D
+ggseg(child, atlas = schaefer7_400, mapping = aes(fill = part), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(0.6, 0.85)) +
+  theme_brain(text.size=16)
+ggsave(filename ='../figures/Fig4D.eps', device = "pdf", dpi = 500) #, width = .5 , height = .5
+
+# Figure4E
+k = 3
+model <- gam(adult[['part']] ~ s(SArank, k=k), data = adult)
+postscript('../figures/Fig4E.eps') 
+plot(model, all.terms = TRUE, residuals=TRUE, shade=TRUE, xlab='S-Aaxis', ylab='Participation Coefficient (z-scored)')
+dev.off()
+
+# Figure4F
+k = 3
+model <- gam(child[['part']] ~ s(SArank, k=k), data = child)
+postscript('../figures/Fig4F.eps') 
+plot(model, all.terms = TRUE, residuals=TRUE, shade=TRUE, xlab='S-Aaxis', ylab='Participation Coefficient (z-scored)')
+dev.off()
+```

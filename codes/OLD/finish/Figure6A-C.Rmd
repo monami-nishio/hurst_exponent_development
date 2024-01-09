@@ -1,0 +1,57 @@
+```{r setup, error=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+concat <- read.csv('../derivatives/childhood/original.csv')
+
+# Figure6A
+k = 3
+model_part <- gam(concat[['part']] ~ s(SArank, k=k), data = concat)
+model_H <- gam(concat[['H']] ~ s(SArank, k=k), data = concat)
+postscript('../figures/Fig6A.eps') 
+plot(model_part, all.terms = TRUE, residuals=TRUE, shade=TRUE, ylim=c(-0.1,0.1), xlab='SAaxis', ylab='', pch=16)
+par(new=T)
+plot(model_H, all.terms = TRUE, residuals=TRUE, shade=TRUE, ylim=c(-0.1,0.1), lty=2, xlab='SAaxis', ylab='z-scored', pch=1)
+par(new=T)
+legend(400, 480, legend=c("Line 1", "Line 2"),col=c("red", "blue"), lty=1:2, cex=0.8)
+dev.off()
+
+# Figure6B
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('../figures/Fig6B.eps') 
+plot(concat[['H']],concat[['part']], 
+   xlab="Hurst Exponent ", ylab="Participation Coefficient", pch=19, col=colfunc[concat[['SArank']]])
+lmresult <- lm(concat[['part']]~concat[['H']])
+preds <- predict(lmresult, newdata=data.frame(concat[['H']]), interval="confidence", level = 0.95)
+abline(lmresult, col="black")
+polygon(c(rev(concat[['H']][order(concat[['H']])]), concat[['H']][order(concat[['H']])]), c(rev(preds[ ,3][order(concat[['H']])]), preds[ ,2][order(concat[['H']])]), col = 'grey80', border = NA)
+dev.off()
+
+# Figure6C
+indv <- read.csv('../derivatives/childhood/indv.csv')
+colfunc <- colorRampPalette(c("skyblue","darkblue"))(137)
+postscript('../figures/Fig6C.eps') 
+plot(indv[['H']],indv[['part']], ylim=c(0.7,0.9),
+   xlab="Hurst Exponent", ylab="Participation Coefficient", pch=19, col=colfunc)
+lmresult <- lm(indv[['part']]~indv[['H']])
+preds <- predict(lmresult, newdata=data.frame(indv[['H']]), interval="confidence", level = 0.95)
+abline(lmresult, col="black")
+polygon(c(rev(indv[['H']][order(indv[['H']])]), indv[['H']][order(indv[['H']])]), c(rev(preds[ ,3][order(indv[['H']])]), preds[ ,2][order(indv[['H']])]), col = 'grey80', border = NA)
+print(summary(lmresult))
+dev.off()
+```

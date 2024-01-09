@@ -1,0 +1,158 @@
+---
+title: "Piper Functional Maturity"
+author: "Cassidy McDermott"
+date: "8/19/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+gamp <- function (modelobject) {
+    if (class(modelobject) != "summary(gam") stop("Not an object of class 'summary(gam' ")
+    f <- summary(modelobject)$fstatistic
+    p <- pf(f[1],f[2],f[3],lower.tail=F)
+    attributes(p) <- NULL
+    return(p)
+}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+source("/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/R/rotate.parcellation.R")
+source("/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/R/perm.sphere.p.R")
+age_part <- read.csv('/Users/monaminishio/Desktop/HOME8/Functional/derivative/imageData_t1/test/n125_long_inc_part_coef_avg_nodewise_avgrunsschaefer400_age_sensitivity.csv')
+
+# Figure3G
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('figures/Figure3G.eps') 
+for (n in 1:400){
+  col <- colnames(age_part)[n+1]
+  model <- gam(scale(age_part[[col]]) ~ s(age_scan, k=3) + male + t1_rating_avg, data = age_part)
+  if (n==400){
+      plot(model, se=FALSE, residuals=FALSE, shade=FALSE, col=colfunc[n], ylim=c(-1.5,1), xlim=c(4,9), ylab='Participation Coefficient (z-scored)', xlab='Age')}
+    else {
+      plot(model, se=FALSE, residuals=FALSE, shade=FALSE, col=colfunc[n], ylim=c(-1.5,1), xlim=c(4,9), ylab='',yaxt="n" , xlab='',xaxt="n" )}
+  par(new=T)
+}
+```
+
+```{r setup, include=FALSE}
+# Figure3H
+derivatives <- data.frame(derv=1:400)
+for (n in 1:400){
+  col <- colnames(age_part)[n+1]
+  model <- gam(scale(age_part[[col]]) ~ s(age_scan, k=3) + male + t1_rating_avg, data = age_part)
+  derv <- derivatives(model, interval = "simultaneous", unconditional = F)
+  derv <- derv %>% #add "sig" column (TRUE/FALSE) to derv
+    mutate(sig = !(0 > lower & 0 < upper)) #derivative is sig if the lower CI is not < 0 while the upper CI is > 0 (i.e., when the CI does not include 0)
+  derv$sig_deriv = derv$derivative*derv$sig #add "sig_deriv derivatives column where non-significant derivatives are set to 0
+  decreasing.range <- derv$data[derv$derivative < 0] 
+  if(length(decreasing.range) > 0)
+    #res <- lm(derv$derivative[derv$derivative < 0]~derv$data[derv$derivative < 0])
+    #derivatives$derv[n] <- res$coefficients[[2]]
+    derivatives$derv[n] <- mean(derv$derivative[derv$derivative < 0])
+  if(length(decreasing.range) == 0)
+    derivatives$derv[n] <- NA
+}
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('figures/Figure3H_sensitivity.eps') 
+plot(sort(H[['HArank']]),derivatives[['derv']],
+   xlab="S-Aaxis", ylab="Participation coefficient decrease onset", pch=19, col=colfunc[sort(H[['HArank']])])
+lmresult <- lm(derivatives[['derv']]~sort(H[['HArank']]))
+preds <- predict(lmresult, newdata=data.frame(sort(H[['HArank']])), interval="confidence", level = 0.95)
+abline(lmresult, col="black")
+polygon(c(rev(sort(H[['HArank']])), sort(H[['HArank']])), c(rev(preds[ ,3]), preds[ ,2]), col = 'grey80', border = NA)
+print(summary(lmresult))
+dev.off()
+#write_csv(derivatives, '/Users/monaminishio/Desktop/HOME8/SurfaceArea/scripts/pvalues/part_gam_derivatives.csv')
+```
+
+```{r setup, include=FALSE}
+# Figure3H: ver2
+derivatives <- data.frame(derv=1:400)
+for (n in 1:400){
+  col <- colnames(age_part)[n+1]
+  model <- gam(scale(age_part[[col]]) ~ s(age_scan, k=3) + male + t1_rating_avg, data = age_part)
+  derv <- derivatives(model, interval = "simultaneous", unconditional = F)
+  derv <- derv %>% #add "sig" column (TRUE/FALSE) to derv
+    mutate(sig = !(0 > lower & 0 < upper)) #derivative is sig if the lower CI is not < 0 while the upper CI is > 0 (i.e., when the CI does not include 0)
+  derv$sig_deriv = derv$derivative*derv$sig #add "sig_deriv derivatives column where non-significant derivatives are set to 0
+  decreasing.range <- derv$data[derv$derivative > 0] 
+  if(length(decreasing.range) > 0)
+    derivatives$derv[n] <- min(decreasing.range) #find youngest age with a significant negative derivative
+  if(length(decreasing.range) == 0)
+    derivatives$derv[n] <- NA
+  if(length(decreasing.range) == 200)
+    derivatives$derv[n] <- NA
+}
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('figures/Figure3Hver2_sensitivity.eps') 
+plot(sort(H[['HArank']]),derivatives[['derv']],
+   xlab="S-Aaxis", ylab="Participation coefficient decrease onset", pch=19, col=colfunc[sort(H[['HArank']])])
+lmresult <- lm(derivatives[['derv']]~sort(H[['HArank']]))
+abline(lmresult, col="black")
+print(summary(lmresult))
+dev.off()
+
+# Figure3H: ver3
+derivatives <- data.frame(derv=1:400)
+for (n in 1:400){
+  col <- colnames(age_part)[n+1]
+  model <- gam(scale(age_part[[col]]) ~ s(age_scan, k=3) + male + t1_rating_avg, data = age_part)
+  derv <- derivatives(model, interval = "simultaneous", unconditional = F)
+  derv <- derv %>% #add "sig" column (TRUE/FALSE) to derv
+    mutate(sig = !(0 > lower & 0 < upper)) #derivative is sig if the lower CI is not < 0 while the upper CI is > 0 (i.e., when the CI does not include 0)
+  derv$sig_deriv = derv$derivative*derv$sig #add "sig_deriv derivatives column where non-significant derivatives are set to 0
+  decreasing.range <- derv$data[derv$derivative < 0] 
+  if(length(decreasing.range) > 0)
+    derivatives$derv[n] <- max(decreasing.range) #find youngest age with a significant negative derivative
+  if(length(decreasing.range) == 0)
+    derivatives$derv[n] <- NA
+  if(length(decreasing.range) == 200)
+    derivatives$derv[n] <- NA
+}
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('figures/Figure3Hver3_sensitivity.eps') 
+plot(sort(H[['HArank']]),derivatives[['derv']],
+   xlab="S-Aaxis", ylab="Participation coefficient decrease onset", pch=19, col=colfunc[sort(H[['HArank']])])
+lmresult <- lm(derivatives[['derv']]~sort(H[['HArank']]))
+abline(lmresult, col="black")
+print(summary(lmresult))
+dev.off()
+```
+
+```{r setup, include=FALSE}
+# Figure3I
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript(paste('figures/Figure3I_sensitivity',n,'.eps'))
+for (n in c(0,133,266)){
+  col <- colnames(age_part)[(2+n):(134+n)]
+  model <- gam(scale(rowMeans(age_part[col])) ~ s(age_scan, k=3) + male + t1_rating_avg, data = age_part)
+  plot(model, se=TRUE, residuals=FALSE, shade=TRUE, shade.col=colfunc[n+1], col=colfunc[n+1], ylim=c(-2,2), xlim=c(4,9), ylab='Hurst Exponent (z-scored)', xlab='Age')
+  par(new=T)
+  derv <- derivatives(model, interval = "simultaneous", unconditional = F)
+  derv <- derv %>% #add "sig" column (TRUE/FALSE) to derv
+    mutate(sig = !(0 > lower & 0 < upper)) #derivative is sig if the lower CI is not < 0 while the upper CI is > 0 (i.e., when the CI does not include 0)
+  derv$sig_deriv = derv$derivative*derv$sig #add "sig_deriv derivatives column where non-significant derivatives are set to 0
+  decreasing.range <- derv$data[derv$derivative > 0] 
+  if(length(decreasing.range) > 0)
+    derivatives$derv[n] <- min(decreasing.range) #find youngest age with a significant negative derivative
+  plot(c(min(decreasing.range),min(decreasing.range)), c(-2,2), type="l", ylim=c(-2,2), xlim=c(4,9), ylab='Participation Coefficient (z-scored)', xlab='Age')
+  par(new=T)
+}
+dev.off()
+```
