@@ -1,0 +1,140 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+devtools::install_github("WinVector/WVPlots")
+library(WVPlots)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggExtra)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+library(gratia)
+load(file="../../Modules/human/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label <- rbind(lh_label, rh_label)
+income_H_low <- read.csv("../../Derivatives/childhood/H_income_low.csv") 
+income_H_high <- read.csv("../../Derivatives/childhood/H_income_high.csv") 
+income_part_low <- read.csv("../../Derivatives/childhood/part_income_low.csv") 
+income_part_high <- read.csv("../../Derivatives/childhood/part_income_high.csv") 
+brainmap <- read.csv("../../Derivatives/childhood/brainmap.csv") 
+brainmap <- cbind(brainmap, label)
+k = 3
+```
+
+```{r setup, include=FALSE}
+# Figure6D
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+for (n in c(1,134,267)){
+  postscript(paste('Fig6D', n, '.eps'))
+  col <- colnames(income_H_low)[(n):(133+n)]
+  alllow <- income_H_low[col[1]]
+  allhigh <- income_H_high[col[1]]
+  colnames(alllow) <- 'age'
+  colnames(allhigh) <- 'age'
+  for (x in col){
+    colconcat <- income_H_low[x]
+    colnames(colconcat) <- 'age'
+    alllow <- rbind(alllow, colconcat)
+    colconcat <- income_H_high[x]
+    colnames(colconcat) <- 'age'
+    allhigh <- rbind(allhigh, colconcat)}
+  allages <- income_H_low['age_scan']
+  for (x in col){
+    allages <- rbind(allages, income_H_low['age_scan'])}
+  allsex <- income_H_low['male']
+  for (x in col){
+    allsex <- rbind(allsex, income_H_low['male'])}
+  allt1 <- income_H_low['t1_rating_avg']
+  for (x in col){
+    allt1 <- rbind(allt1, income_H_low['t1_rating_avg'])}
+  alllow <- cbind(alllow, allages, allsex, allt1)
+  allages <- income_H_low['age_scan']
+  for (x in col){
+  allages <- rbind(allages, income_H_high['age_scan'])}
+  allsex <- income_H_high['male']
+  for (x in col){
+    allsex <- rbind(allsex, income_H_high['male'])}
+  allt1 <- income_H_high['t1_rating_avg']
+  for (x in col){
+    allt1 <- rbind(allt1, income_H_high['t1_rating_avg'])}
+  allhigh <- cbind(allhigh, allages, allsex, allt1)
+  model <- gam(alllow[['age']] ~ s(age_scan, k=k) + male + t1_rating_avg, data = alllow)
+  plot(model, se=TRUE, residuals=FALSE, shade=TRUE, shade.col=colfunc[n], shade.alpha=0.1, col=colfunc[n], xlim=c(4,11), ylim=c(-0.1,0.1),ylab='Hurst Exponent (z-scored)', xlab='Age', lty=2, pch=1) # 
+  par(new=T)
+  model <- gam(allhigh[['age']] ~ s(age_scan, k=k) + male + t1_rating_avg, data = allhigh)
+  plot(model, se=TRUE, residuals=FALSE, shade=TRUE, shade.col=colfunc[n], shade.alpha=0.1, col=colfunc[n], xlim=c(4,11), ylim=c(-0.1,0.1),ylab='', xlab='') # 
+  dev.off()
+}
+```
+
+```{r setup, include=FALSE}
+# Figure6E
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+for (n in c(1,134,267)){
+  postscript(paste('Fig6E', n, '.eps'))
+  col <- colnames(income_part_low)[(n):(133+n)]
+  alllow <- income_part_low[col[1]]
+  allhigh <- income_part_high[col[1]]
+  colnames(alllow) <- 'age'
+  colnames(allhigh) <- 'age'
+  for (x in col){
+    colconcat <- income_part_low[x]
+    colnames(colconcat) <- 'age'
+    alllow <- rbind(alllow, colconcat)
+    colconcat <- income_part_high[x]
+    colnames(colconcat) <- 'age'
+    allhigh <- rbind(allhigh, colconcat)}
+  allages <- income_part_low['age_scan']
+  for (x in col){
+    allages <- rbind(allages, income_part_low['age_scan'])}
+  allsex <- income_part_low['male']
+  for (x in col){
+    allsex <- rbind(allsex, income_part_low['male'])}
+  allt1 <- income_part_low['t1_rating_avg']
+  for (x in col){
+    allt1 <- rbind(allt1, income_part_low['t1_rating_avg'])}
+  alllow <- cbind(alllow, allages, allsex, allt1)
+  allages <- income_part_low['age_scan']
+  for (x in col){
+  allages <- rbind(allages, income_part_high['age_scan'])}
+  allsex <- income_part_high['male']
+  for (x in col){
+    allsex <- rbind(allsex, income_part_high['male'])}
+  allt1 <- income_part_high['t1_rating_avg']
+  for (x in col){
+    allt1 <- rbind(allt1, income_part_high['t1_rating_avg'])}
+  allhigh <- cbind(allhigh, allages, allsex, allt1)
+  model <- gam(alllow[['age']] ~ s(age_scan, k=k) + male + t1_rating_avg, data = alllow)
+  plot(model, se=TRUE, residuals=FALSE, shade=TRUE, shade.col=colfunc[n], shade.alpha=0.1, col=colfunc[n], xlim=c(4,11), ylim=c(-0.05,0.05),ylab='Hurst Exponent (z-scored)', xlab='Age', lty=2, pch=1) # 
+  par(new=T)
+  model <- gam(allhigh[['age']] ~ s(age_scan, k=k) + male + t1_rating_avg, data = allhigh)
+  plot(model, se=TRUE, residuals=FALSE, shade=TRUE, shade.col=colfunc[n], shade.alpha=0.1, col=colfunc[n], xlim=c(4,11), ylim=c(-0.05,0.05),ylab='', xlab='') # 
+  dev.off()
+}
+```
+
+```{r setup, include=FALSE}
+# Figure6brainmap
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+a <- ggseg(brainmap, atlas = schaefer17_400, mapping = aes(fill = X0), 
+        position = "stacked") + theme_brain(text.size=16) +  scale_fill_gradientn(colours=c('gray', colfunc[1+3]), values = scales::rescale(c(0, 1)))
+ggsave(filename =paste('Fig6', 1, '.eps'), device = "pdf", dpi = 500)
+ggseg(brainmap, atlas = schaefer17_400, mapping = aes(fill = X1), 
+        position = "stacked") + theme_brain(text.size=16) +  scale_fill_gradientn(colours=c('gray', colfunc[133+3]), values = scales::rescale(c(0, 1)))
+ggsave(filename =paste('Fig6', 133, '.eps'), device = "pdf", dpi = 500)
+ggseg(brainmap, atlas = schaefer17_400, mapping = aes(fill = X2), 
+        position = "stacked") + theme_brain(text.size=16) +  scale_fill_gradientn(colours=c('gray', colfunc[266+3]), values = scales::rescale(c(0, 1)))
+ggsave(filename =paste('Fig6', 266, '.eps'), device = "pdf", dpi = 500)
+```
