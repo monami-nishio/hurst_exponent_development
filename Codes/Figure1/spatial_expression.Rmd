@@ -1,0 +1,44 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+devtools::install_github("WinVector/WVPlots")
+library(WVPlots)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggExtra)
+library(cowplot)
+library(car)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggseg)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+library(gratia)
+
+age_H <- read.csv("RNA.csv")   
+#age_H <- age_H[age_H$age!='3 yrs', ]
+k=3
+```
+
+```{r setup, include=FALSE}
+marker <- 'GAD2' #'PVALB', 'SST', 'VIP', 'GAD1', 'GAD2'
+age_H[[marker]] <- scale(age_H[[marker]])
+postscript(paste(marker, '.eps'))
+model <- gam(age_H[[marker]] ~ s(sa, k=k), data = age_H)
+pred <- predict(model, se.fit=T)
+ggplot(data = age_H, mapping = aes(x = sa, y = GAD2, fill = sa)) +
+  geom_point(aes(x=sa, color=sa)) + scale_color_gradient(low='yellow', high='purple') +
+  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
+                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
+  geom_smooth(method="gam", formula= y~s(x, k=k)) + ylim(-2,2.5)
+print(summary(model))
+dev.off()
+```

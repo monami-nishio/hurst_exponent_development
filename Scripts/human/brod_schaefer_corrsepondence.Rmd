@@ -1,0 +1,190 @@
+
+```{r setup, error=TRUE, include=FALSE}
+library(ggseg)
+library(ggseg3d)
+library(ggsegBrodmann)
+library(ggsegSchaefer)
+library(WVPlots)
+library(clue)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(ggExtra)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggseg)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+library(gratia)
+
+load(file="/Users/monaminishio/Desktop/HOME38/202402_paper/Modules/human/brodmann_3d.rda")
+lh_label <- brodmann_3d$ggseg_3d[[1]]['region'][2:40,1:1]
+rh_label <- brodmann_3d$ggseg_3d[[2]]['region'][2:40,1:1]
+label  <-rbind(lh_label, rh_label)
+brod <- read.csv('/Users/monaminishio/Desktop/HOME38/202402_paper/Dataset/rna/brodmann.csv')
+#brod['region'] <- label
+load(file="/Users/monaminishio/Desktop/HOME38/202402_paper/Modules/human/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label  <-rbind(lh_label, rh_label)
+schaefer <- read.csv('/Users/monaminishio/Desktop/HOME38/202402_paper/Dataset/rna/schaefer.csv')
+schaefer['region'] <- label
+```
+
+```{r setup, error=TRUE, include=FALSE}
+brod_roi <- data.frame(xmin=1:78, xmax=1:78,ymin=1:78, ymax=1:78,zmin=1:78, zmax=1:78)
+for (n in 1:39){
+brod_l <- brodmann_3d$ggseg_3d[[1]][['mesh']][[n+1]][['vertices']]
+brod_r <- brodmann_3d$ggseg_3d[[2]][['mesh']][[n+1]][['vertices']]
+brod_roi$xmin[n] <- min(brod_l[['x']])
+brod_roi$xmax[n] <- max(brod_l[['x']])
+brod_roi$ymin[n] <- min(brod_l[['y']])
+brod_roi$ymax[n] <- max(brod_l[['y']])
+brod_roi$zmin[n] <- min(brod_l[['z']])
+brod_roi$zmax[n] <- max(brod_l[['z']])
+brod_roi$xmin[n+39] <- min(brod_r[['x']])
+brod_roi$xmax[n+39] <- max(brod_r[['x']])
+brod_roi$ymin[n+39] <- min(brod_r[['y']])
+brod_roi$ymax[n+39] <- max(brod_r[['y']])
+brod_roi$zmin[n+39] <- min(brod_r[['z']])
+brod_roi$zmax[n+39] <- max(brod_r[['z']])
+}
+
+schaefer_roi <- data.frame(xmin=1:400, xmax=1:400,ymin=1:400, ymax=1:400,zmin=1:400, zmax=1:400)
+for (n in 1:200){
+schaefer_l <- schaefer17_400_3d$ggseg_3d[[1]][['mesh']][[n+1]][['vertices']]
+schaefer_r <- schaefer17_400_3d$ggseg_3d[[2]][['mesh']][[n+1]][['vertices']]
+schaefer_roi$xmin[n] <- min(schaefer_l[['x']])
+schaefer_roi$xmax[n] <- max(schaefer_l[['x']])
+schaefer_roi$ymin[n] <- min(schaefer_l[['y']])
+schaefer_roi$ymax[n] <- max(schaefer_l[['y']])
+schaefer_roi$zmin[n] <- min(schaefer_l[['z']])
+schaefer_roi$zmax[n] <- max(schaefer_l[['z']])
+schaefer_roi$xmin[n+200] <- min(schaefer_r[['x']])
+schaefer_roi$xmax[n+200] <- max(schaefer_r[['x']])
+schaefer_roi$ymin[n+200] <- min(schaefer_r[['y']])
+schaefer_roi$ymax[n+200] <- max(schaefer_r[['y']])
+schaefer_roi$zmin[n+200] <- min(schaefer_r[['z']])
+schaefer_roi$zmax[n+200] <- max(schaefer_r[['z']])
+}
+```
+
+```{r setup, error=TRUE, include=FALSE}
+all_regions_lh <- data.frame(label=lh_label)
+for (n in 1:39){
+  regions = c(0)
+  xmin <- brod_roi$xmin[n]
+  xmax <- brod_roi$xmax[n]
+  ymin <- brod_roi$ymin[n]
+  ymax <- brod_roi$ymax[n]
+  zmin <- brod_roi$zmin[n]
+  zmax <- brod_roi$zmax[n]
+  for (k in 1:200){
+      sxmin <- schaefer_roi$xmin[k]
+      sxmax <- schaefer_roi$xmax[k]
+      symin <- schaefer_roi$ymin[k]
+      symax <- schaefer_roi$ymax[k]
+      szmin <- schaefer_roi$zmin[k]
+      szmax <- schaefer_roi$zmax[k]
+      if (xmin<sxmin)
+        xrange <- xmax-sxmin
+      else
+        xrange <- sxmax-xmin
+      if (ymin<symin)
+        yrange <- ymax-symin
+      else
+        yrange <- symax-ymin
+      if (zmin<szmin)
+        zrange <- zmax-szmin
+      else
+        zrange <- szmax - zmin
+      if (xrange>0&yrange>0&zrange>0)
+        if (xrange*yrange*zrange>(xmax-xmin)*(ymax-ymin)*(zmax-zmin)*0.3)
+          regions <- append(regions, 1)
+        else
+          regions <- append(regions, 0)
+      else
+        regions <- append(regions, 0)
+  }
+  all_regions_lh <- cbind(all_regions_lh, regions[2:201])
+}
+all_regions_rh <- data.frame(label=rh_label)
+for (n in 40:78){
+  regions = c(0)
+  xmin <- brod_roi$xmin[n]
+  xmax <- brod_roi$xmax[n]
+  ymin <- brod_roi$ymin[n]
+  ymax <- brod_roi$ymax[n]
+  zmin <- brod_roi$zmin[n]
+  zmax <- brod_roi$zmax[n]
+  for (k in 201:400){
+      sxmin <- schaefer_roi$xmin[k]
+      sxmax <- schaefer_roi$xmax[k]
+      symin <- schaefer_roi$ymin[k]
+      symax <- schaefer_roi$ymax[k]
+      szmin <- schaefer_roi$zmin[k]
+      szmax <- schaefer_roi$zmax[k]
+      if (xmin<sxmin)
+        xrange <- xmax-sxmin
+      else
+        xrange <- sxmax-xmin
+      if (ymin<symin)
+        yrange <- ymax-symin
+      else
+        yrange <- symax-ymin
+      if (zmin<szmin)
+        zrange <- zmax-szmin
+      else
+        zrange <- szmax - zmin
+      if (xrange>0&yrange>0&zrange>0)
+        if (xrange*yrange*zrange>(xmax-xmin)*(ymax-ymin)*(zmax-zmin)*0.3)
+          regions <- append(regions, 1)
+        else
+          regions <- append(regions, 0)
+      else
+        regions <- append(regions, 0)
+  }
+  all_regions_rh <- cbind(all_regions_rh, regions[2:201])
+}
+all_regions <- rbind(all_regions_lh, all_regions_rh)
+```
+
+```{r setup, error=TRUE, include=FALSE}
+load(file="/Users/monaminishio/Desktop/HOME38/202402_paper/Modules/human/brodmann_3d.rda")
+lh_label <- brodmann_3d$ggseg_3d[[1]]['region'][2:40,1:1]
+rh_label <- brodmann_3d$ggseg_3d[[2]]['region'][2:40,1:1]
+label  <-rbind(lh_label, rh_label)
+for (n in 2:40){
+  colnames(all_regions)[n] <- label$region[n-1]}
+write.csv(all_regions, '/Users/monaminishio/Desktop/HOME38/202402_paper/Dataset/rna/brodmann_schaefer_0.3.csv')
+```
+
+```{r setup, error=TRUE, include=FALSE}
+schaefer_clusters <- read.csv('/Users/monaminishio/Desktop/HOME38/202402_paper/Dataset/rna/brodmann_schafer_clustering.csv')
+b <- ggseg(schaefer_clusters, atlas = schaefer17_400, mapping = aes(fill = group), 
+      position = "stacked") + theme_void() +
+    scale_fill_gradient2(low="blue", mid='green', high="red",
+                          breaks=c(1,2,3,4,5,6,7,8,9,10,11),
+                          limits=c(1, 11), guide = "legend") +  labs(title="Aparc plots rule") +
+  theme_brain(text.size=16) + theme(legend.position = "bottom", 
+        legend.text = element_text(size = 9)) +
+  guides(fill = guide_legend(ncol = 6))
+#ggsave(filename ='../figures/Figure1B_schaefer.eps', device = "pdf", dpi = 500)
+```
+
+```{r setup, error=TRUE, include=FALSE}
+b <- ggseg(brod, atlas = brodmann, mapping = aes(fill = sa), 
+      position = "stacked") + theme_void() +
+    scale_fill_gradient(low = "yellow", high = "purple",limits = c(0, 10)) +  labs(title="Aparc plots rule") +
+  theme_brain(text.size=16) + theme(legend.position = "bottom", 
+        legend.text = element_text(size = 9)) +
+  guides(fill = guide_legend(ncol = 6))
+ggsave(filename ='Figure1B_fix.eps', device = "pdf", dpi = 500)
+```

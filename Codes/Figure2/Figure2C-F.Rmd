@@ -19,52 +19,50 @@ library(psych)
 library(nlme)
 library(mgcv)
 
-load(file="../modules/schaefer17_400_3d.RData")
+load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
 lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
 rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
 label  <-rbind(lh_label, rh_label)
-child <- read.csv('../derivatives/childhood/original.csv')
+child <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
 child['region'] <- label
-adult <- read.csv('../derivatives/adult/original.csv')
+adult <- read.csv('../../Derivatives/adult/original.csv')
 adult['region'] <- label
+k <- 3
 ```
 
 ```{r setup, error=TRUE, include=FALSE}
 # Figure2C
-ggseg(adult, atlas = schaefer17_400, mapping = aes(fill = H), 
-      position = "stacked") +
-  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.3)) +
-  theme_brain(text.size=16)
-ggsave(filename ='../figures/Figure2Cadult.eps', device = "pdf", dpi = 500)
-
-# Figure2D
 ggseg(child, atlas = schaefer17_400, mapping = aes(fill = H), 
       position = "stacked") +
-  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.3)) +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.31)) +
   theme_brain(text.size=16)
-ggsave(filename ='../figures/Figure2Dchild.eps', device = "pdf", dpi = 500)
+#ggsave(filename ='Figure2Cchild.eps', device = "pdf", dpi = 500)
+# Figure2D
+ggseg(adult, atlas = schaefer17_400, mapping = aes(fill = H), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.31)) +
+  theme_brain(text.size=16)
+#ggsave(filename ='Figure2Dadult.eps', device = "pdf", dpi = 500)
 ```
 
 ```{r setup, error=TRUE, include=FALSE}
-k = 3
 # Figure2E
-postscript('../figures/Fig2Eadult.eps') 
-model <- gam(adult[['H']] ~ s(SArank, k=k), data = adult)
-pred <- predict(model, se.fit=T)
-ggplot(data = adult, mapping = aes(x = SArank, y = H)) +
-  geom_point() + 
-  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
-                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
-  geom_smooth(method="gam", formula= y~s(x, k=k)) + ylim(1,1.3)
-print(summary(model))
-dev.off()
-
-# Figure2F
-postscript('../figures/Fig2Fchild.eps') 
+postscript('Fig2Echild.eps') 
 model <- gam(child[['H']] ~ s(SArank, k=k), data = child)
 pred <- predict(model, se.fit=T)
-ggplot(data = child, mapping = aes(x = SArank, y = H)) +
-  geom_point() + 
+ggplot(data = child, mapping = aes(x = SArank, y = H, fill = SArank)) +
+  geom_point(aes(x=SArank, color=SArank)) + scale_color_gradient(low='yellow', high='purple') +
+  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
+                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
+  geom_smooth(method="gam", formula= y~s(x, k=k)) + ylim(1,1.3) 
+print(summary(model))
+dev.off()
+# Figure2F
+postscript('Fig2Fadult.eps') 
+model <- gam(adult[['H']] ~ s(SArank, k=k), data = adult)
+pred <- predict(model, se.fit=T)
+ggplot(data = adult, mapping = aes(x = SArank, y = H, fill = SArank)) +
+  geom_point(aes(x=SArank, color=SArank)) + scale_color_gradient(low='yellow', high='purple') +
   geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
                    ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
   geom_smooth(method="gam", formula= y~s(x, k=k)) + ylim(1,1.3)

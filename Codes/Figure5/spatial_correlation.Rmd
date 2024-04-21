@@ -1,0 +1,135 @@
+
+```{r setup, error=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggseg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label  <-rbind(lh_label, rh_label)
+child <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
+child['region'] <- label
+indv <- read.csv('../../Derivatives/childhood/indv_motion_1mm.csv')
+indv05 <- read.csv('../../Derivatives/childhood/indv_motion_0.5mm.csv')
+concat <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
+concat05 <- read.csv('../../Derivatives/childhood/original_motion_0.5mm.csv')
+age_H <- read.csv("../../Derivatives/childhood/hurst_motion_1mm.csv") 
+age_part <- read.csv("../../Derivatives/childhood/part_motion_1mm.csv") 
+```
+
+```{r setup, error=TRUE, include=FALSE}
+# Figure5A
+ggseg(child, atlas = schaefer17_400, mapping = aes(fill = part), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue", limits = c(0.72, 0.82)) +
+  theme_brain(text.size=16)
+ggsave(filename ='Figure5A.eps', device = "pdf", dpi = 500)
+```
+
+```{r setup, error=TRUE, include=FALSE}
+k = 3
+# Figure5B
+postscript('Fig5B.eps') 
+model <- gam(child[['part']] ~ s(SArank, k=k), data = child)
+pred <- predict(model, se.fit=T)
+ggplot(data = child, mapping = aes(x = SArank, y = part)) +
+  geom_point(aes(x=SArank, color=SArank)) + scale_color_gradient(low='yellow', high='purple') +
+  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
+                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
+  geom_smooth(method="gam", formula= y~s(x, k=k)) 
+print(summary(model))
+dev.off()
+```
+
+```{r setup, error=TRUE, include=FALSE}
+# Figure5C
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('Fig5C.eps') 
+plot(concat[['H']],concat[['part']], 
+   xlab="Hurst Exponent ", ylab="Participation Coefficient", pch=19, col=colfunc[concat[['SArank']]])#ylim=c(0.55,0.85), xlim=c(1.0,1.35)
+lmresult <- lm(concat[['part']]~concat[['H']])
+preds <- predict(lmresult, newdata=data.frame(concat[['H']]), interval="confidence", level = 0.95)
+abline(lmresult, col="black")
+polygon(c(rev(concat[['H']][order(concat[['H']])]), concat[['H']][order(concat[['H']])]), c(rev(preds[ ,3][order(concat[['H']])]), preds[ ,2][order(concat[['H']])]), col = 'grey80', border = NA) #ylim=c(0.55,0.85), xlim=c(1.0,1.35)
+dev.off()
+print(lmresult)
+```
+
+
+```{r setup, error=TRUE, include=FALSE}
+# SupFig1C
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+postscript('SupFig1C.eps') 
+plot(concat05[['H']],concat05[['part']], 
+   xlab="Hurst Exponent ", ylab="Participation Coefficient", pch=19, col=colfunc[concat05[['SArank']]])
+lmresult <- lm(concat05[['part']]~concat05[['H']])
+preds <- predict(lmresult, newdata=data.frame(concat05[['H']]), interval="confidence", level = 0.95)
+abline(lmresult, col="black")
+polygon(c(rev(concat05[['H']][order(concat05[['H']])]), concat05[['H']][order(concat05[['H']])]), c(rev(preds[ ,3][order(concat05[['H']])]), preds[ ,2][order(concat05[['H']])]), col = 'grey80', border = NA) 
+dev.off()
+print(lmresult)
+```
+
+```{r setup, error=TRUE, include=FALSE}
+model <- glm(indv[['part']] ~ H + age, data = indv)
+pred <- predict(model, se.fit=T)
+indv$pred_marker <- predict(model, newdata = indv, type = "response")
+ggplot(indv, aes(H, pred_marker), ylim=c(0.7,0.9)) +
+  geom_point(aes(x=H, y=part, colour = age), pch=19)+
+    scale_color_continuous(trans = 'reverse') + 
+  geom_smooth(method="glm", formula= y~x, alpha=1) + ylim(0.7,0.9)
+ggsave(file='Fig5F.eps', width=6, height=4, dpi=300)
+print(summary(model))
+```
+
+```{r setup, error=TRUE, include=FALSE}
+model <- glm(indv05[['part']] ~ H + age, data = indv05)
+pred <- predict(model, se.fit=T)
+indv05$pred_marker <- predict(model, newdata = indv05, type = "response")
+ggplot(indv, aes(H, pred_marker), ylim=c(0.7,0.9)) +
+  geom_point(aes(x=H, y=part, colour = age), pch=19)+
+    scale_color_continuous(trans = 'reverse') + 
+  geom_smooth(method="glm", formula= y~x, alpha=1) + ylim(0.7,0.9)
+ggsave(file='SupFig1F.eps', width=6, height=4, dpi=300)
+print(summary(model))
+```
+
+```{r setup, error=TRUE, include=FALSE}
+model <- glm(age_H[['Mean']] ~ meanFD + age_scan, data = age_H)
+pred <- predict(model, se.fit=T)
+ggplot(data = age_H, mapping = aes(x = meanFD, y = Mean)) +
+  geom_point(aes(colour = age_scan), pch=19)+
+    scale_color_continuous(trans = 'reverse') +
+  geom_smooth(method="glm", formula= y~s(x, k=k), alpha=1) + 
+  geom_line(size=.3, alpha = .8)  + theme(legend.position='none')
+ggsave(file='SupFig1A.eps', width=6, height=4, dpi=300)
+print(summary(model))
+```
+
+```{r setup, error=TRUE, include=FALSE}
+model <- glm(age_part[['Mean']] ~ meanFD + age_scan, data = age_part)
+pred <- predict(model, se.fit=T)
+ggplot(data = age_part, mapping = aes(x = meanFD, y = Mean)) +
+  geom_point(aes(colour = age_scan), pch=19)+
+    scale_color_continuous(trans = 'reverse') + 
+  geom_smooth(method="glm", formula= y~s(x, k=k), alpha=1) +
+  geom_line(size=.3, alpha = .8)  + theme(legend.position='none') + ylim(c(0.7,0.85))
+ggsave(file='SupFig1D.eps', width=6, height=4, dpi=300)
+print(summary(model))
+```

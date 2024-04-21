@@ -1,5 +1,4 @@
-addpath('../modules/nonfractal')
-addpath('../modules/wmtsa-matlab-0.2.6')
+addpath(genpath('../../Rmodules'))
 lb = [-0.5,0];
 ub = [1.5,10];
 
@@ -9,8 +8,8 @@ fcor_all = zeros(400,400);
 int_all = [];
 sub_all = [];
 run_all = [];
-subjlist=readtable(('../dataset/QA_revision.csv'),'Delimiter',',','ReadVariableNames', 1);
-datadir='../dataset/childhood/timeseries';
+subjlist=readtable(('../../Dataset/childhood/QA_revision.csv'),'Delimiter',',','ReadVariableNames', 1);
+datadir='../../Dataset/childhood/timeseries';
 for n=1:height(subjlist)
     sub=char(subjlist.sub(n));
     run=num2str(subjlist.run(n));
@@ -30,4 +29,4 @@ for n=1:height(subjlist)
 end
 H_all = [num2cell(H_all) cellstr(sub_all) cellstr(run_all)];
 H_all = cell2table(H_all);
-writetable(H_all, '../derivatives/childhood/H.csv');
+writetable(H_all, '../../Dataset/childhood/H.csv');

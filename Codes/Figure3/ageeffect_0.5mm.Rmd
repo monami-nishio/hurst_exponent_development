@@ -1,0 +1,86 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+devtools::install_github("WinVector/WVPlots")
+library(WVPlots)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggExtra)
+library(cowplot)
+library(car)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggseg)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(gratia)
+
+load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label <- rbind(lh_label, rh_label)
+age_H <- read.csv("../../Derivatives/childhood/hurst_motion_0.5mm.csv")   
+age_H_sorted <- read.csv("../../Derivatives/childhood/hurst_sorted_motion_0.5mm.csv")
+concat <- read.csv('../../Derivatives/childhood/original_motion_0.5mm.csv')
+brod <- read.csv('../../Derivatives/childhood/hurst_brodmann.csv')
+brodmean <- read.csv('../../Derivatives/childhood/hurst_brodmann_mean.csv') 
+brainmap <- read.csv("../../Derivatives/childhood/brainmap.csv") 
+brainmap <- cbind(brainmap, label)
+age_H_sorted <- age_H_sorted[age_H_sorted$sub!='CBPD0015',]
+age_H_sorted <- age_H_sorted[age_H_sorted$sub!='CBPD0247',]
+k=3
+```
+
+```{r setup, include=FALSE}
+# SupFig 1B
+colfunc <- colorRampPalette(c("yellow","purple"))(400)
+n <-267
+col <- colnames(age_H_sorted)[(n):(133+n)]
+allcol <- age_H_sorted[col[1]]
+colnames(allcol) <- 'age'
+for (x in col){
+  colconcat <- age_H_sorted[x]
+  colnames(colconcat) <- 'age'
+  allcol <- rbind(allcol, colconcat)}
+allages <- age_H_sorted['age_scan']
+for (x in col){
+  allages <- rbind(allages, age_H_sorted['age_scan'])}
+allsex <- age_H_sorted['male']
+for (x in col){
+  allsex <- rbind(allsex, age_H_sorted['male'])}
+allmotion <- age_H_sorted['meanFD']
+for (x in col){
+  allmotion <- rbind(allmotion, age_H_sorted['meanFD'])}
+allcol <- cbind(allcol, allages, allsex, allmotion)
+model <- gam(allcol[['age']] ~ s(age_scan, k=k) + male + meanFD, data = allcol)
+gam.model <- gam(allcol[['age']] ~ s(age_scan, k=k) + male + meanFD, data = allcol)
+gam.nullmodel <- gam(allcol[['age']] ~ male + meanFD, data = allcol)
+### effect size
+sse.model <- sum((gam.model$y - gam.model$fitted.values)^2)
+sse.nullmodel <- sum((gam.nullmodel$y - gam.nullmodel$fitted.values)^2)
+partialRsq <- (sse.nullmodel - sse.model)/sse.nullmodel
+print(partialRsq)
+pred <- predict(model, se.fit=T)
+derv <- derivatives(model, interval = "simultaneous", unconditional = F)
+increasing.range <- derv[['age_scan']][derv[['.lower_ci']] > 0]
+print(max(increasing.range))
+allcol$prediction <- pred$fit
+allcol$ymin <- pred$fit-1.96*pred$se.fit
+allcol$ymax <- pred$fit+1.96*pred$se.fit
+p <- ggplot(data = allcol, mapping = aes(x = age_scan, y = prediction)) +
+geom_smooth(method="gam", formula= y~s(x, k=k), se=TRUE, alpha=1) + ylim(1.0,1.2)
+ggsave('Fig3B_0.5mm_noregress_1.eps', plot=p, width=6, height=4, units='in', dpi=300)#, device="eps")
+```
+
+```{r setup, include=FALSE}
+correctedpvalue <- data.frame(age=1:3)
+correctedpvalue$age <- p.adjust(pvalue$age, method=c("fdr"))
+pvalue$age <- pvalue$age < 0.05
+```

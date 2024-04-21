@@ -1,0 +1,85 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+devtools::install_github("WinVector/WVPlots")
+library(WVPlots)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggExtra)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggseg)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+library(gratia)
+
+load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label <- rbind(lh_label, rh_label)
+age_H <- read.csv("../../Derivatives/childhood/part_motion_1mm.csv")   
+age_H_sorted <- read.csv("../../Derivatives/childhood/part_sorted_motion_1mm.csv")
+concat <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
+brod <- read.csv('../../Derivatives/childhood/part_brodmann.csv')
+age_H <- age_H[age_H$sub!='CBPD0015',]
+age_H <- age_H[age_H$sub!='CBPD0247',]
+age_H_sorted <- age_H_sorted[age_H_sorted$sub!='CBPD0015',]
+age_H_sorted <- age_H_sorted[age_H_sorted$sub!='CBPD0247',]
+k=3
+```
+
+```{r setup, include=FALSE}
+schaefer_H <- data.frame(age=1:400)
+pvalue <- data.frame(age=1:400)
+for (n in 1:400){
+  col <- colnames(age_H)[n]
+  gam.model <- gam(age_H[[col]] ~ s(age_scan, k=k) + male + meanFD, data = age_H)
+  gam.nullmodel <- gam(age_H[[col]] ~ male + meanFD, data = age_H)
+  derv <- derivatives(gam.model, interval = "simultaneous", unconditional = F)
+  pvalue$age[n] <- anova.gam(gam.nullmodel, gam.model, test='Chisq')$`Pr(>Chi)`[2]
+  ### effect size
+  sse.model <- sum((gam.model$y - gam.model$fitted.values)^2)
+  sse.nullmodel <- sum((gam.nullmodel$y - gam.nullmodel$fitted.values)^2)
+  partialRsq <- (sse.nullmodel - sse.model)/sse.nullmodel
+  ### effect direction
+  mean.derivative <- mean(derv[['.derivative']])
+  if(mean.derivative < 0){ #if the average derivative is less than 0, make the effect size estimate negative
+    partialRsq <- partialRsq*-1}
+  schaefer_H$age[n] <- partialRsq
+}
+```
+
+```{r setup, include=FALSE}
+correctedpvalue <- data.frame(age=1:400)
+correctedpvalue$age <- p.adjust(pvalue$age, method=c("fdr")) < 0.05
+pvalue$age <- pvalue$age < 0.05
+schaefer_H_extractp <- schaefer_H
+schaefer_H_extractp[pvalue==FALSE] <- NA
+schaefer_H_extractp <- cbind(schaefer_H_extractp, label)
+schaefer_H_extractpadj <- schaefer_H
+schaefer_H_extractpadj[correctedpvalue==FALSE] <- NA
+schaefer_H_extractpadj <- cbind(schaefer_H_extractpadj, label)
+```
+
+```{r setup, include=FALSE}
+schaefer_H[['SArank']] <- concat[['SArank']]
+model <- gam(schaefer_H[['age']] ~ s(SArank, k=k), data = schaefer_H)
+pred <- predict(model, se.fit=T)
+ggplot(data = schaefer_H, mapping = aes(x = SArank, y = age)) +
+  geom_point(aes(color = schaefer_H[['SArank']]))  +
+  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
+                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
+  geom_smooth(method="gam", formula= y~s(x, k=k)) + scale_color_gradient(low='yellow', high='purple') +
+  geom_line(size=.3, alpha = .8)
+ggsave(file='Figure5E.eps', width=8, height=4, dpi=300)
+print(summary(model))
+```
