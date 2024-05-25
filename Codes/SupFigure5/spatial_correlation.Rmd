@@ -1,0 +1,64 @@
+
+```{r setup, error=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggseg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label  <-rbind(lh_label, rh_label)
+child <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
+child['region'] <- label
+adult <- read.csv('../../Derivatives/adult/original.csv')
+adult['region'] <- label
+indv <- read.csv('../../Derivatives/childhood/indv_motion_1mm.csv')
+indv05 <- read.csv('../../Derivatives/childhood/indv_motion_0.5mm.csv')
+concat <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
+concat05 <- read.csv('../../Derivatives/childhood/original_motion_0.5mm.csv')
+age_H <- read.csv("../../Derivatives/childhood/hurst_motion_1mm.csv") 
+age_part <- read.csv("../../Derivatives/childhood/part_motion_1mm.csv") 
+age_H <- age_H[age_H$sub!='CBPD0015',]
+age_part <- age_part[age_part$sub!='CBPD0015',]
+age_H <- age_H[age_H$sub!='CBPD0247',]
+age_part <- age_part[age_part$sub!='CBPD0247',]
+adult_H <- read.csv('../../Derivatives/adult/hurst_motion.csv')
+```
+
+```{r setup, error=TRUE, include=FALSE}
+model <- lm(age_H[['Mean']] ~ meanFD + age_scan, data = age_H)
+pred <- predict(model, se.fit=T)
+ggplot(data = age_H, mapping = aes(x = meanFD, y = Mean)) +
+  geom_point(aes(colour = age_scan), pch=19)+
+    scale_color_continuous(trans = 'reverse') +
+  geom_smooth(method="lm", formula= y~x, alpha=1)  + theme(legend.position='none') + ylim(c(0.7,1.2)) + xlim(c(0,1))
+ggsave(file='SupFig5child.eps', width=6, height=4, dpi=300) 
+print(summary(model))
+```
+
+```{r setup, error=TRUE, include=FALSE}
+adult_H[['Mean']] <- rowMeans(adult_H[, 2:401])
+model <- lm(adult_H[['Mean']] ~ meanFD, data = adult_H)
+pred <- predict(model, se.fit=T)
+ggplot(data = adult_H, mapping = aes(x = meanFD, y = Mean)) +
+  geom_point(pch=19)+
+    scale_color_continuous(trans = 'reverse') +
+  geom_smooth(method="lm", formula= y~x, alpha=1) + theme(legend.position='none') + ylim(c(0.7,1.2)) + xlim(c(0,1))
+ggsave(file='SupFig5adult.eps', width=6, height=4, dpi=300)
+print(summary(model))
+```

@@ -1,0 +1,67 @@
+
+```{r setup, error=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(clue)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+library(corrplot)
+library(visreg)
+library(ggseg)
+library(ggcorrplot)
+library(ggseg3d)
+library(ggsegSchaefer)
+library(ggsegYeo2011)
+library(psych)
+library(nlme)
+library(mgcv)
+
+load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
+lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
+rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
+label  <-rbind(lh_label, rh_label)
+child <- read.csv('../../Derivatives/childhood/original_motion_1mm.csv')
+child['region'] <- label
+adult <- read.csv('../../Derivatives/adult/original.csv')
+adult['region'] <- label
+k <- 3
+```
+
+```{r setup, error=TRUE, include=FALSE}
+ggseg(child, atlas = schaefer17_400, mapping = aes(fill = H), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.31)) +
+  theme_brain(text.size=16)
+ggsave(filename ='SupFig1Achild.eps', device = "pdf", dpi = 500)
+ggseg(adult, atlas = schaefer17_400, mapping = aes(fill = H), 
+      position = "stacked") +
+  scale_fill_gradient(low = "white", high = "blue",limits = c(1.0, 1.31)) +
+  theme_brain(text.size=16)
+ggsave(filename ='SupFig1Badult.eps', device = "pdf", dpi = 500)
+```
+
+```{r setup, error=TRUE, include=FALSE}
+postscript('SupFig1Cchild.eps') 
+model <- gam(child[['H']] ~ s(SArank, k=k), data = child)
+pred <- predict(model, se.fit=T)
+ggplot(data = child, mapping = aes(x = SArank, y = H, fill = SArank)) +
+  geom_point(aes(x=SArank, color=SArank)) + scale_color_gradient(low='yellow', high='purple') +
+  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
+                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
+  geom_smooth(method="gam", formula= y~s(x, k=k)) + ylim(1,1.3) 
+print(summary(model))
+dev.off()
+postscript('SupFig1Dadult.eps') 
+model <- gam(adult[['H']] ~ s(SArank, k=k), data = adult)
+pred <- predict(model, se.fit=T)
+ggplot(data = adult, mapping = aes(x = SArank, y = H, fill = SArank)) +
+  geom_point(aes(x=SArank, color=SArank)) + scale_color_gradient(low='yellow', high='purple') +
+  geom_ribbon(aes(ymin=pred$fit-1.96*pred$se.fit,
+                   ymax=pred$fit+1.96*pred$se.fit), alpha = 1, fill = 'gray') +
+  geom_smooth(method="gam", formula= y~s(x, k=k)) + ylim(1,1.3)
+print(summary(model))
+dev.off()
+```
