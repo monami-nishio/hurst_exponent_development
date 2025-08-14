@@ -10,7 +10,7 @@ Install the following MATLAB packages and place them in the `/module` folder:
 - `nonfractal`
 
 ## Dataset (`/Data`)
-The datasets are too large to be stored on GitHub. They are available on Zenodo: **[Zenodo DOI/URL here]**.
+The datasets are too large to be stored on GitHub. They are available on Zenodo: **[https://zenodo.org/uploads/16877128]**.
 
 | Folder     | File                          | Description |
 |------------|------------------------------|-------------|
