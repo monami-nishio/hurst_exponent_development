@@ -1,52 +1,39 @@
-# The development of neural inhibition across species: insights from the Hurst exponent
+# The Development of Neural Inhibition Across Species: Insights from the Hurst Exponent
 
 ## About
-This repository contains the code and data supporting the study *"The development of neural inhibition across species: insights from the Hurst exponent,"* published in *Journal of Neuroscience*.
+This repository contains the code and metadata supporting the study  
+*"The Development of Neural Inhibition Across Species: Insights from the Hurst Exponent"*, published in *XX*.
 
 ## Setup
-Install following MATLAB packages and put under /module folder.
-* 2019_03_03_BCT
-* nonfractal
+Install the following MATLAB packages and place them in the `/module` folder:
+- `2019_03_03_BCT`
+- `nonfractal`
 
-## Dataset (/data)
+## Dataset (`/Data`)
+The datasets are too large to be stored on GitHub. They are available on Zenodo: **[Zenodo DOI/URL here]**.
 
-| Column | Column | Description |
-| ---- | ---- | ---- |
-| adult | timeseries | rsfMRI timeseries for adult samples |
-|  | correlation | rsfMRI pearson correlation matrix for adult samples |
-|  | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
-| childhood | timeseries | rsfMRI timeseries for child samples |
-|  | correlation | rsfMRI pearson correlation matrix for adult samples |
-|  | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
-| rna | column_metadata |  |
-|  | rows_metadata |  |
-|  | expression_matrix |  |
+| Folder     | File                          | Description |
+|------------|------------------------------|-------------|
+| **adult**  | `timeseries`                  | rs-fMRI time series for adult samples |
+|            | `participants.tsv`            | Demographic information for adult samples |
+|            | `schaefer_XX.csv`             | RNA expression (Human Allen Brain Atlas) across 400 Schaefer parcels |
+| **childhood** | `timeseries`                | rs-fMRI time series for child samples |
+|            | `correlation`                 | rs-fMRI Pearson correlation matrix for adult samples |
+|            | `expression_matrix.csv`       | RNA expression (Lifespan Brain Atlas) across 11 cortical regions |
+| **mouse**  | `timeseries`                   | rs-fMRI time series for mouse samples |
+|            | `participants.tsv`            | Demographic information for mouse samples |
+|            | `celldensity_mmc3.csv`         | Inhibitory neuronal cell density in mouse samples |
 
-## How to run (/codes)
+## How to Run (`/Scripts`)
+To calculate the Hurst exponent:
+- `hurst_exponent_human/mouse.m`
 
-To calculate hurst exponent
-* `hurst_exponent.m`. 
+## How to Run (`/Codes`)
+To reproduce the figures:
 
-To calculate participation coefficient
-* `participation_coefficient.m`. 
+- **Figure 1** – `Figure1_spatial_distribution/`  
+- **Figure 2** – `Figure2_spatial_correlation/`  
+- **Figure 3** – `Figure3_developmental_trajectory/`  
+- **Supplementary Figure 2** – `FigureS2_highres_spatial_correlation/`  
 
-To reproduce Figure 1,
-* `Figure1.ipynb` reproduce RNA-analysis. 
-
-To reproduce Figure 2,   
-* `Figure2AB.ipynb` reproduce sample timeseries and spectrogram.
-* `Figure2CD.Rmd` reproduce hurst exponent along S-A axis.
-
-To reproduce Figure 3,   
-* `Figure3.Rmd` reproduce hurst exponent developmental analysis.  
-
-To reproduce Figure 4,   
-* `Figure4A.ipynb` reproduce sample correlation matrix.
-* `Figure4CD.Rmd` reproduce participation coefficient along S-A axis.
-
-To reproduce Figure 5,   
-* `Figure5.Rmd` reproduce participation coefficient developmental analysis.
-  
-To reproduce Figure 6,  
-* `Figure6A-C.Rmd` reproduce correlation mapping between hurst exponent and participation coefficient.
-* `Figure6D-G.Rmd` reproduce income effect on hurst exponent and participation coefficient.
+All necessary data for running these scripts are stored in `/Derivatives`.
