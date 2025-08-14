@@ -22,7 +22,7 @@ library(psych)
 library(nlme)
 library(gratia)
 
-load(file="../../Dataset/childhood/atlas/schaefer17_400_3d.RData")
+load(file="../../Dataset/childhood/schaefer17_400_3d.RData")
 lh_label <- schaefer17_400_3d$ggseg_3d[[1]]['region'][2:201,1:1]
 rh_label <- schaefer17_400_3d$ggseg_3d[[2]]['region'][2:201,1:1]
 label <- rbind(lh_label, rh_label)
@@ -30,7 +30,6 @@ age_H <- read.csv("../../Derivatives/childhood/hurst_motion_0.5mm.csv")
 age_H_sorted <- read.csv("../../Derivatives/childhood/hurst_sorted_motion_0.5mm.csv")
 concat <- read.csv('../../Derivatives/childhood/original_motion_0.5mm.csv')
 brod <- read.csv('../../Derivatives/childhood/hurst_brodmann.csv')
-brodmean <- read.csv('../../Derivatives/childhood/hurst_brodmann_mean.csv') 
 brainmap <- read.csv("../../Derivatives/childhood/brainmap.csv") 
 brainmap <- cbind(brainmap, label)
 age_H_sorted <- age_H_sorted[age_H_sorted$sub!='CBPD0015',]
@@ -39,7 +38,6 @@ k=3
 ```
 
 ```{r setup, include=FALSE}
-# SupFig 1B
 colfunc <- colorRampPalette(c("yellow","purple"))(400)
 n <-267
 col <- colnames(age_H_sorted)[(n):(133+n)]
@@ -76,11 +74,5 @@ allcol$ymin <- pred$fit-1.96*pred$se.fit
 allcol$ymax <- pred$fit+1.96*pred$se.fit
 p <- ggplot(data = allcol, mapping = aes(x = age_scan, y = prediction)) +
 geom_smooth(method="gam", formula= y~s(x, k=k), se=TRUE, alpha=1) + ylim(1.0,1.2)
-ggsave('Fig3B_0.5mm_noregress_1.eps', plot=p, width=6, height=4, units='in', dpi=300)#, device="eps")
-```
-
-```{r setup, include=FALSE}
-correctedpvalue <- data.frame(age=1:3)
-correctedpvalue$age <- p.adjust(pvalue$age, method=c("fdr"))
-pvalue$age <- pvalue$age < 0.05
+ggsave('childhood_development.eps', plot=p, width=6, height=4, units='in', dpi=300)#, device="eps")
 ```
