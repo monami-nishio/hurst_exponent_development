@@ -1,17 +1,12 @@
-# hurst_exponent_development
-
-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
+# The development of neural inhibition across species: insights from the Hurst exponent
 
 ## About
-This is the codes to replicate the analysis in Nishio et al.  
-[Link to the paper]
+This repository contains the code and data supporting the study *"The development of neural inhibition across species: insights from the Hurst exponent,"* published in *Journal of Neuroscience*.
 
 ## Setup
 Install following MATLAB packages and put under /module folder.
 * 2019_03_03_BCT
 * nonfractal
-* system-segregation-and-graph-tools
-* wmtsa-matlab-0.2.6
 
 ## Dataset (/data)
 
@@ -20,9 +15,9 @@ Install following MATLAB packages and put under /module folder.
 | adult | timeseries | rsfMRI timeseries for adult samples |
 |  | correlation | rsfMRI pearson correlation matrix for adult samples |
 |  | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
-| childhood | timeseries | rsfMRI timeseries for adult samples |
+| childhood | timeseries | rsfMRI timeseries for child samples |
 |  | correlation | rsfMRI pearson correlation matrix for adult samples |
-| | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
+|  | connectivity | rsfMRI z-scored pearson correlation matrix for adult samples |
 | rna | column_metadata |  |
 |  | rows_metadata |  |
 |  | expression_matrix |  |
